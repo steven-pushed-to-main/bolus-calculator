@@ -147,7 +147,7 @@
       const sensitivityFactor = parseFloat(localStorage.getItem("sensitivityFactor"));
       const targetBG = parseFloat(localStorage.getItem("targetBG"));
       const currentBG = parseFloat(document.getElementById('currentBG').value);
-      const mealCarbs = parseFloat(document.getElementById('mealCarbs').value);
+      const mealCarbs = parseFloat(document.getElementById('mealCarbs').value) || 0;
 
       if (
         isNaN(carbRatio) ||
