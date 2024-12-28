@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Main Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .calculator {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      width: 350px;
+      text-align: center;
+    }
+
+    .calculator h1 {
+      font-size: 28px;
+      font-weight: bold;
+      color: #4a4a4a;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 5px;
+    }
+
+    .input-group input {
+      width: calc(100% - 24px);
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 14px;
+      margin: 0 auto;
+      display: block;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background-color: #6a11cb;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #2575fc;
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .nav-links {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .nav-links a {
+      color: #6a11cb;
+      font-size: 14px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: #2575fc;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <h1>Insulin Bolus Calculator</h1>
+
+    <div class="input-group">
+      <label for="currentBG">Current BG (mg/dL):</label>
+      <input type="number" id="currentBG" />
+    </div>
+
+    <div class="input-group">
+      <label for="mealCarbs">Meal Carbs (g):</label>
+      <input type="number" id="mealCarbs" />
+    </div>
+
+    <button onclick="calculateBolus()">Calculate</button>
+    <div id="result" class="result"></div>
+
+    <div class="nav-links">
+      <a href="settings_page.html">Settings</a>
+      <a href="log_graph_page.html">Log & Graph</a>
+    </div>
+  </div>
+
+  <script>
+    function calculateBolus() {
+      const carbRatio = parseFloat(localStorage.getItem("carbRatio"));
+      const sensitivityFactor = parseFloat(localStorage.getItem("sensitivityFactor"));
+      const targetBG = parseFloat(localStorage.getItem("targetBG"));
+      const currentBG = parseFloat(document.getElementById('currentBG').value);
+      const mealCarbs = parseFloat(document.getElementById('mealCarbs').value);
+
+      if (
+        isNaN(carbRatio) ||
+        isNaN(sensitivityFactor) ||
+        isNaN(targetBG) ||
+        isNaN(currentBG) ||
+        isNaN(mealCarbs)
+      ) {
+        document.getElementById('result').innerText = 'Please enter valid numbers.';
+        return;
+      }
+
+      const carbBolus = mealCarbs / carbRatio;
+      const bgCorrectionBolus = currentBG > targetBG ? (currentBG - targetBG) / sensitivityFactor : 0;
+      const totalBolus = carbBolus + bgCorrectionBolus;
+      const roundedBolus = Math.round(totalBolus);
+
+      document.getElementById('result').innerText = `Total Bolus: ${roundedBolus}`;
+
+      saveLog(currentBG, mealCarbs, roundedBolus);
+    }
+
+    function saveLog(currentBG, mealCarbs, totalBolus) {
+      const logData = JSON.parse(localStorage.getItem("logData")) || [];
+      const timestamp = new Date().toLocaleString();
+      logData.push({ timestamp, currentBG, mealCarbs, totalBolus });
+      localStorage.setItem("logData", JSON.stringify(logData));
+    }
+  </script>
+</body>
+</html>
