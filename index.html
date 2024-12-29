@@ -15,15 +15,138 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js").then(() => {
-      console.log("Service Worker Registered");
-    }).catch((error) => {
-      console.error("Service Worker Registration Failed:", error);
-    });
-  }
-</script>
-  
+    // Register Service Worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js").then(() => {
+        console.log("Service Worker Registered");
+      }).catch((error) => {
+        console.error("Service Worker Registration Failed:", error);
+      });
+    }
+
+    // ---- Helper Functions for Time-Based Schedules ----
+
+    // Parses an HH:MM string into { hour, minute }.
+    function parseTime(timeString) {
+      const [hour, minute] = timeString.split(':').map(Number);
+      return { hour, minute };
+    }
+
+    // Checks if currentTime is within the [start, end) interval.
+    // Handles times that cross midnight.
+    function isWithinTimeWindow(currentTime, start, end) {
+      const currentTotal = currentTime.hour * 60 + currentTime.minute;
+      const startTotal   = start.hour * 60 + start.minute;
+      const endTotal     = end.hour * 60 + end.minute;
+
+      // If start < end (does not cross midnight)
+      if (startTotal < endTotal) {
+        return (currentTotal >= startTotal && currentTotal < endTotal);
+      }
+      // If start > end (crosses midnight)
+      else if (startTotal > endTotal) {
+        return (currentTotal >= startTotal || currentTotal < endTotal);
+      }
+      // If start == end, interpret as full 24-hour schedule
+      else {
+        return true;
+      }
+    }
+
+    // Returns the first matching schedule if the current time is within any schedule window.
+    // Otherwise returns null.
+    function getActiveSchedule() {
+      // Retrieve array of schedule objects from localStorage
+      const schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+      const now       = new Date();
+      const currentTime = { hour: now.getHours(), minute: now.getMinutes() };
+
+      // Check each schedule
+      for (let schedule of schedules) {
+        if (!schedule.startTime || !schedule.endTime) continue; // skip incomplete
+
+        const start = parseTime(schedule.startTime);
+        const end   = parseTime(schedule.endTime);
+
+        if (isWithinTimeWindow(currentTime, start, end)) {
+          // Return the matched schedule’s values
+          return {
+            carbRatio: schedule.carbRatio,
+            sensitivityFactor: schedule.sensitivityFactor,
+            targetBG: schedule.targetBG
+          };
+        }
+      }
+
+      // No schedule matched
+      return null;
+    }
+
+    // Determines which calculator settings to use right now
+    function getCurrentSettings() {
+      const activeSchedule = getActiveSchedule();
+
+      if (activeSchedule) {
+        // Use the active schedule’s values
+        return {
+          carbRatio: Number(activeSchedule.carbRatio),
+          sensitivityFactor: Number(activeSchedule.sensitivityFactor),
+          targetBG: Number(activeSchedule.targetBG)
+        };
+      } else {
+        // Otherwise, use the default settings from localStorage
+        return {
+          carbRatio: Number(localStorage.getItem("carbRatio") || 10),
+          sensitivityFactor: Number(localStorage.getItem("sensitivityFactor") || 50),
+          targetBG: Number(localStorage.getItem("targetBG") || 100)
+        };
+      }
+    }
+
+    // ---- Main Calculation ----
+
+    function calculateBolus() {
+      // Fetch the appropriate settings (time-based or default)
+      const { carbRatio, sensitivityFactor, targetBG } = getCurrentSettings();
+
+      // Get user inputs
+      const currentBG = parseFloat(document.getElementById('currentBG').value);
+      const mealCarbs = parseFloat(document.getElementById('mealCarbs').value) || 0;
+
+      // Validate
+      if (
+        isNaN(carbRatio) ||
+        isNaN(sensitivityFactor) ||
+        isNaN(targetBG) ||
+        isNaN(currentBG) ||
+        isNaN(mealCarbs)
+      ) {
+        document.getElementById('result').innerText = 'Please enter valid numbers.';
+        return;
+      }
+
+      // Bolus calculations
+      const carbBolus = mealCarbs / carbRatio;
+      const correctionBolus = currentBG > targetBG ? (currentBG - targetBG) / sensitivityFactor : 0;
+      const totalBolus = carbBolus + correctionBolus;
+      const roundedBolus = Math.round(totalBolus);
+
+      // Display result
+      document.getElementById('result').innerText = `Total Bolus: ${roundedBolus}`;
+
+      // Save to log
+      saveLog(currentBG, mealCarbs, roundedBolus);
+    }
+
+    // Logs the calculation to localStorage
+    function saveLog(currentBG, mealCarbs, totalBolus) {
+      const logData = JSON.parse(localStorage.getItem("logData")) || [];
+      const timestamp = new Date().toLocaleString();
+      logData.push({ timestamp, currentBG, mealCarbs, totalBolus });
+      localStorage.setItem("logData", JSON.stringify(logData));
+    }
+  </script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -137,45 +260,8 @@
 
     <div class="nav-links">
       <a href="settings_page.html">Settings</a>
-      <a href="log_graph_page.html">Log & Graph</a>
+      <a href="log_graph_page.html">Log &amp; Graph</a>
     </div>
   </div>
-
-  <script>
-    function calculateBolus() {
-      const carbRatio = parseFloat(localStorage.getItem("carbRatio"));
-      const sensitivityFactor = parseFloat(localStorage.getItem("sensitivityFactor"));
-      const targetBG = parseFloat(localStorage.getItem("targetBG"));
-      const currentBG = parseFloat(document.getElementById('currentBG').value);
-      const mealCarbs = parseFloat(document.getElementById('mealCarbs').value) || 0;
-
-      if (
-        isNaN(carbRatio) ||
-        isNaN(sensitivityFactor) ||
-        isNaN(targetBG) ||
-        isNaN(currentBG) ||
-        isNaN(mealCarbs)
-      ) {
-        document.getElementById('result').innerText = 'Please enter valid numbers.';
-        return;
-      }
-
-      const carbBolus = mealCarbs / carbRatio;
-      const bgCorrectionBolus = currentBG > targetBG ? (currentBG - targetBG) / sensitivityFactor : 0;
-      const totalBolus = carbBolus + bgCorrectionBolus;
-      const roundedBolus = Math.round(totalBolus);
-
-      document.getElementById('result').innerText = `Total Bolus: ${roundedBolus}`;
-
-      saveLog(currentBG, mealCarbs, roundedBolus);
-    }
-
-    function saveLog(currentBG, mealCarbs, totalBolus) {
-      const logData = JSON.parse(localStorage.getItem("logData")) || [];
-      const timestamp = new Date().toLocaleString();
-      logData.push({ timestamp, currentBG, mealCarbs, totalBolus });
-      localStorage.setItem("logData", JSON.stringify(logData));
-    }
-  </script>
 </body>
 </html>

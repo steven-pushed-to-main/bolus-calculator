@@ -8,9 +8,10 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      /* Increased padding so there's more space above/below content. Adjust as desired. */
+      padding: 20px 0;
       background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -22,7 +23,7 @@
       padding: 20px;
       border-radius: 20px;
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-      width: 350px;
+      width: 400px;
       text-align: center;
     }
 
@@ -31,6 +32,27 @@
       font-weight: bold;
       color: #4a4a4a;
       margin-bottom: 20px;
+    }
+
+    .active-schedule-card {
+      display: none; /* hidden by default, shown only if a schedule is active */
+      background: #fff7e6;
+      border: 1px solid #f0d9b5;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      text-align: left; /* so the text lines up nicely */
+    }
+    .active-schedule-card h2 {
+      margin-top: 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+    .active-schedule-card p {
+      margin: 6px 0;
+      line-height: 1.4;
+      color: #555;
     }
 
     .input-group {
@@ -98,11 +120,52 @@
     .nav-link.clear:hover {
       color: #c0392b;
     }
+
+    .scheduled-settings {
+      margin-top: 30px;
+      text-align: left;
+    }
+
+    .scheduled-settings h2 {
+      font-size: 20px;
+      font-weight: bold;
+      color: #4a4a4a;
+      margin-bottom: 15px;
+    }
+
+    .schedule-item {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .schedule-item input {
+      margin: 5px 0;
+      width: calc(100% - 24px);
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .schedule-item .remove {
+      color: #e74c3c;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-block;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
   <div class="settings">
     <h1>Settings</h1>
+
+    <!-- Active Schedule Card -->
+    <div id="activeScheduleCard" class="active-schedule-card">
+      <h2>Currently Active Schedule</h2>
+      <p id="activeScheduleInfo"></p>
+    </div>
 
     <div class="input-group">
       <label for="carbRatio">Carb Ratio (g/unit):</label>
@@ -120,6 +183,13 @@
     </div>
 
     <button onclick="saveSettings()">Save</button>
+
+    <div class="scheduled-settings">
+      <h2>Scheduled Settings</h2>
+      <div id="scheduleList"></div>
+      <button onclick="addSchedule()">Add Schedule</button>
+    </div>
+
     <div class="nav-buttons">
       <a href="#" class="nav-link clear" onclick="clearLogData()">Clear Log Data</a>
       <a href="index.html" class="nav-link">Back to Calculator</a>
@@ -127,10 +197,20 @@
   </div>
 
   <script>
+    /* ------------------------------------------------------------------
+     * 1. EXISTING LOGIC
+     * ------------------------------------------------------------------ */
+    let schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+
+    function saveSchedulesToLocalStorage() {
+      localStorage.setItem("schedules", JSON.stringify(schedules));
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
-      const savedCarbRatio = localStorage.getItem("carbRatio");
+      // Load saved default settings
+      const savedCarbRatio         = localStorage.getItem("carbRatio");
       const savedSensitivityFactor = localStorage.getItem("sensitivityFactor");
-      const savedTargetBG = localStorage.getItem("targetBG");
+      const savedTargetBG          = localStorage.getItem("targetBG");
 
       if (savedCarbRatio) {
         document.getElementById("carbRatio").value = savedCarbRatio;
@@ -141,12 +221,27 @@
       if (savedTargetBG) {
         document.getElementById("targetBG").value = savedTargetBG;
       }
+
+      // Create schedule items
+      const scheduleList = document.getElementById("scheduleList");
+      schedules.forEach(schedule => {
+        const scheduleItem = createScheduleItem(schedule);
+        scheduleList.appendChild(scheduleItem);
+      });
+
+      // Check for an active schedule and show/hide the card
+      const active = getActiveSchedule();
+      if (active) {
+        showActiveScheduleCard(active);
+      } else {
+        hideActiveScheduleCard();
+      }
     });
 
     function saveSettings() {
-      const carbRatio = document.getElementById("carbRatio").value;
+      const carbRatio         = document.getElementById("carbRatio").value;
       const sensitivityFactor = document.getElementById("sensitivityFactor").value;
-      const targetBG = document.getElementById("targetBG").value;
+      const targetBG          = document.getElementById("targetBG").value;
 
       if (carbRatio) {
         localStorage.setItem("carbRatio", carbRatio);
@@ -158,7 +253,74 @@
         localStorage.setItem("targetBG", targetBG);
       }
 
+      localStorage.setItem("schedules", JSON.stringify(schedules));
       alert("Settings saved successfully!");
+    }
+
+    function addSchedule() {
+      const scheduleList = document.getElementById("scheduleList");
+      const newSchedule = {
+        startTime: "",
+        endTime: "",
+        carbRatio: "",
+        sensitivityFactor: "",
+        targetBG: ""
+      };
+      schedules.push(newSchedule);
+      saveSchedulesToLocalStorage();
+      const scheduleItem = createScheduleItem(newSchedule);
+      scheduleList.appendChild(scheduleItem);
+    }
+
+    function createScheduleItem(schedule) {
+      const scheduleItem = document.createElement("div");
+      scheduleItem.classList.add("schedule-item");
+
+      scheduleItem.innerHTML = `
+        <label>Start Time:</label>
+        <input type="time" class="start-time" value="${schedule.startTime}" onchange="updateSchedule(this, 'startTime')">
+        <label>End Time:</label>
+        <input type="time" class="end-time" value="${schedule.endTime}" onchange="updateSchedule(this, 'endTime')">
+        <label>Carb Ratio (g/unit):</label>
+        <input type="number" class="carb-ratio" value="${schedule.carbRatio}" onchange="updateSchedule(this, 'carbRatio')">
+        <label>Sensitivity Factor (mg/dL/unit):</label>
+        <input type="number" class="sensitivity-factor" value="${schedule.sensitivityFactor}" onchange="updateSchedule(this, 'sensitivityFactor')">
+        <label>Target BG (mg/dL):</label>
+        <input type="number" class="target-bg" value="${schedule.targetBG}" onchange="updateSchedule(this, 'targetBG')">
+        <span class="remove" onclick="removeSchedule(this)">Remove</span>
+      `;
+      return scheduleItem;
+    }
+
+    function updateSchedule(element, key) {
+      const index = Array.from(document.getElementById("scheduleList").children)
+                         .indexOf(element.parentNode);
+      schedules[index][key] = element.value;
+      saveSchedulesToLocalStorage();
+
+      // Update the active schedule card if needed
+      const active = getActiveSchedule();
+      if (active) {
+        showActiveScheduleCard(active);
+      } else {
+        hideActiveScheduleCard();
+      }
+    }
+
+    function removeSchedule(element) {
+      const index = Array.from(document.getElementById("scheduleList").children)
+                         .indexOf(element.parentNode);
+      schedules.splice(index, 1);
+      saveSchedulesToLocalStorage();
+      element.parentNode.remove();
+
+      // Update the active schedule card
+      const active = getActiveSchedule();
+      if (active) {
+        showActiveScheduleCard(active);
+      } else {
+        hideActiveScheduleCard();
+      }
     }
 
     function clearLogData() {
@@ -167,6 +329,98 @@
         localStorage.removeItem("logData");
         alert("Log data cleared successfully!");
       }
+    }
+
+    /* ------------------------------------------------------------------
+     * 2. HELPER FUNCTIONS
+     * ------------------------------------------------------------------ */
+
+    // Convert HH:MM to { hour, minute }
+    function parseTime(timeString) {
+      const [h, m] = timeString.split(":");
+      return { hour: Number(h), minute: Number(m) };
+    }
+
+    // Check if currentTime is within [start, end), including crossing midnight.
+    function isWithinTimeWindow(currentTime, start, end) {
+      const currentTotal = currentTime.hour * 60 + currentTime.minute;
+      const startTotal   = start.hour * 60 + start.minute;
+      const endTotal     = end.hour * 60 + end.minute;
+
+      // If start < end (normal case)
+      if (startTotal < endTotal) {
+        return (currentTotal >= startTotal && currentTotal < endTotal);
+      }
+      // If start > end (crosses midnight)
+      else if (startTotal > endTotal) {
+        return (currentTotal >= startTotal || currentTotal < endTotal);
+      }
+      // If start == end => 24-hour coverage
+      else {
+        return true;
+      }
+    }
+
+    // Returns the first schedule that is currently active
+    function getActiveSchedule() {
+      const now = new Date();
+      const currentTime = { hour: now.getHours(), minute: now.getMinutes() };
+
+      for (let schedule of schedules) {
+        // Skip schedules missing times
+        if (!schedule.startTime || !schedule.endTime) {
+          continue;
+        }
+        const startObj = parseTime(schedule.startTime);
+        const endObj   = parseTime(schedule.endTime);
+
+        // If we are within this schedule's time window, it's active
+        if (isWithinTimeWindow(currentTime, startObj, endObj)) {
+          return schedule;
+        }
+      }
+      // No active schedule found
+      return null;
+    }
+
+    /* 
+      Convert "HH:MM" (24-hour) to "hh:mm AM/PM"
+      e.g. "14:30" -> "2:30 PM"
+    */
+    function to12HourFormat(timeString) {
+      const [h, m] = timeString.split(":").map(Number);
+      let hour = h % 12 || 12; // convert "0" to "12"
+      const minute = m < 10 ? "0" + m : m; 
+      const ampm = h < 12 ? "AM" : "PM";
+      return `${hour}:${minute} ${ampm}`;
+    }
+
+    /* ------------------------------------------------------------------
+     * 3. SHOW/HIDE THE ACTIVE SCHEDULE CARD
+     * ------------------------------------------------------------------ */
+
+    function showActiveScheduleCard(schedule) {
+      const activeCard = document.getElementById("activeScheduleCard");
+      const info       = document.getElementById("activeScheduleInfo");
+
+      // Convert start/end times to 12-hour strings
+      const start12 = to12HourFormat(schedule.startTime);
+      const end12   = to12HourFormat(schedule.endTime);
+
+      // Fill in the data
+      info.innerHTML = `
+        <strong>Time Window:</strong> ${start12} - ${end12}<br>
+        <strong>Carb Ratio:</strong> ${schedule.carbRatio}<br>
+        <strong>Sensitivity Factor:</strong> ${schedule.sensitivityFactor}<br>
+        <strong>Target BG:</strong> ${schedule.targetBG}
+      `;
+      // Show the card
+      activeCard.style.display = "block";
+    }
+
+    function hideActiveScheduleCard() {
+      const activeCard = document.getElementById("activeScheduleCard");
+      activeCard.style.display = "none";
     }
   </script>
 </body>
