@@ -69,7 +69,7 @@
         const end   = parseTime(schedule.endTime);
 
         if (isWithinTimeWindow(currentTime, start, end)) {
-          // Return the matched schedule’s values
+          // Return the matched schedule's values
           return {
             carbRatio: schedule.carbRatio,
             sensitivityFactor: schedule.sensitivityFactor,
@@ -87,7 +87,7 @@
       const activeSchedule = getActiveSchedule();
 
       if (activeSchedule) {
-        // Use the active schedule’s values
+        // Use the active schedule's values
         return {
           carbRatio: Number(activeSchedule.carbRatio),
           sensitivityFactor: Number(activeSchedule.sensitivityFactor),
