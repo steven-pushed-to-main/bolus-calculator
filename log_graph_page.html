@@ -99,8 +99,9 @@
 
         logData.forEach(entry => {
             const row = document.createElement("tr");
+            const ts = new Date(entry.timestamp).toLocaleString();
             row.innerHTML = `
-                <td>${entry.timestamp}</td>
+                <td>${ts}</td>
                 <td>${entry.currentBG}</td>
                 <td>${entry.mealCarbs}</td>
                 <td>${entry.totalBolus}</td>
