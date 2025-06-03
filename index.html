@@ -141,7 +141,7 @@
     // Logs the calculation to localStorage
     function saveLog(currentBG, mealCarbs, totalBolus) {
       const logData = JSON.parse(localStorage.getItem("logData")) || [];
-      const timestamp = new Date().toLocaleString();
+      const timestamp = new Date().toISOString();
       logData.push({ timestamp, currentBG, mealCarbs, totalBolus });
       localStorage.setItem("logData", JSON.stringify(logData));
     }

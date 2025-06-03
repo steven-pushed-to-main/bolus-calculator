@@ -4,9 +4,9 @@ self.addEventListener("install", (event) => {
       return cache.addAll([
         "./",
         "./index.html",
+        "./settings_page.html",
+        "./log_graph_page.html",
         "./manifest.json",
-        "./style.css", // Update with your CSS file path
-        "./script.js", // Update with your JS file path
         "./icon-192.png",
         "./icon-512.png"
       ]);
