@@ -14,6 +14,8 @@
   <meta name="apple-mobile-web-app-title" content="Bolus Calculator">
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <script src="timeUtils.js"></script>
+
   <script>
     // Register Service Worker
     if ("serviceWorker" in navigator) {
@@ -25,33 +27,6 @@
     }
 
     // ---- Helper Functions for Time-Based Schedules ----
-
-    // Parses an HH:MM string into { hour, minute }.
-    function parseTime(timeString) {
-      const [hour, minute] = timeString.split(':').map(Number);
-      return { hour, minute };
-    }
-
-    // Checks if currentTime is within the [start, end) interval.
-    // Handles times that cross midnight.
-    function isWithinTimeWindow(currentTime, start, end) {
-      const currentTotal = currentTime.hour * 60 + currentTime.minute;
-      const startTotal   = start.hour * 60 + start.minute;
-      const endTotal     = end.hour * 60 + end.minute;
-
-      // If start < end (does not cross midnight)
-      if (startTotal < endTotal) {
-        return (currentTotal >= startTotal && currentTotal < endTotal);
-      }
-      // If start > end (crosses midnight)
-      else if (startTotal > endTotal) {
-        return (currentTotal >= startTotal || currentTotal < endTotal);
-      }
-      // If start == end, interpret as full 24-hour schedule
-      else {
-        return true;
-      }
-    }
 
     // Returns the first matching schedule if the current time is within any schedule window.
     // Otherwise returns null.
