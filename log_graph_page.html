@@ -95,12 +95,13 @@
         const tableBody = document.getElementById("logTableBody");
 
         // Ensure timestamps are sorted in descending order (most recent first)
-        logData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        logData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         logData.forEach(entry => {
             const row = document.createElement("tr");
+            const time = new Date(entry.timestamp);
             row.innerHTML = `
-                <td>${entry.timestamp}</td>
+                <td>${time.toLocaleString()}</td>
                 <td>${entry.currentBG}</td>
                 <td>${entry.mealCarbs}</td>
                 <td>${entry.totalBolus}</td>
