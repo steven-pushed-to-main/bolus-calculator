@@ -38,7 +38,13 @@
 
       // Check each schedule
       for (let schedule of schedules) {
-        if (!schedule.startTime || !schedule.endTime) continue; // skip incomplete
+        if (
+          !schedule.startTime ||
+          !schedule.endTime ||
+          schedule.carbRatio === '' ||
+          schedule.sensitivityFactor === '' ||
+          schedule.targetBG === ''
+        ) continue; // skip incomplete
 
         const start = parseTime(schedule.startTime);
         const end   = parseTime(schedule.endTime);
