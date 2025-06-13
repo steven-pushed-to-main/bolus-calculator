@@ -157,6 +157,13 @@
 
       const ctx = document.getElementById('logChart').getContext('2d');
       const dateLabel = document.getElementById('currentDate');
+      const prevBtn = document.getElementById('prevDay');
+      const nextBtn = document.getElementById('nextDay');
+
+      if (dates.length === 0) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+      }
 
       let chart;
       function renderChart() {
@@ -251,18 +258,20 @@
         });
       }
 
-      document.getElementById('prevDay').addEventListener('click', () => {
-        if (currentIndex > 0) {
-          currentIndex--;
-          renderChart();
-        }
-      });
-      document.getElementById('nextDay').addEventListener('click', () => {
-        if (currentIndex < dates.length - 1) {
-          currentIndex++;
-          renderChart();
-        }
-      });
+      if (dates.length > 0) {
+        prevBtn.addEventListener('click', () => {
+          if (currentIndex > 0) {
+            currentIndex--;
+            renderChart();
+          }
+        });
+        nextBtn.addEventListener('click', () => {
+          if (currentIndex < dates.length - 1) {
+            currentIndex++;
+            renderChart();
+          }
+        });
+      }
 
       renderChart();
     });
