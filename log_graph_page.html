@@ -142,15 +142,22 @@
 
       // ----- Build chart data grouped by day -----
       const grouped = {};
-      logData.forEach(entry => {
-        const d = new Date(entry.timestamp);
-        const dateKey = d.toISOString().split('T')[0];
-        const x = d.getHours() + d.getMinutes() / 60;
-        if (!grouped[dateKey]) grouped[dateKey] = { glucose: [], insulin: [], carbs: [] };
-        grouped[dateKey].glucose.push({ x, y: entry.currentBG });
-        grouped[dateKey].insulin.push({ x, y: entry.totalBolus });
-        grouped[dateKey].carbs.push({ x, y: entry.mealCarbs });
-      });
+        logData.forEach(entry => {
+          const d = new Date(entry.timestamp);
+          const dateKey = d.toISOString().split('T')[0];
+          const x = d.getHours() + d.getMinutes() / 60;
+          if (!grouped[dateKey]) grouped[dateKey] = { glucose: [], insulin: [], carbs: [] };
+          grouped[dateKey].glucose.push({ x, y: entry.currentBG });
+          grouped[dateKey].insulin.push({ x, y: entry.totalBolus });
+          grouped[dateKey].carbs.push({ x, y: entry.mealCarbs });
+        });
+
+        // Sort each day's entries chronologically so lines render correctly
+        Object.values(grouped).forEach(day => {
+          day.glucose.sort((a, b) => a.x - b.x);
+          day.insulin.sort((a, b) => a.x - b.x);
+          day.carbs.sort((a, b) => a.x - b.x);
+        });
 
       const dates = Object.keys(grouped).sort();
       let currentIndex = dates.length - 1; // show latest day
