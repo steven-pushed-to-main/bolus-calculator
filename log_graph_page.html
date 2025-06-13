@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Log History</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -74,6 +75,7 @@
   <div class="container">
     <h1>Log History</h1>
     <a href="index.html" class="back-link">Back to Calculator</a>
+    <canvas id="logChart"></canvas>
     <table>
       <thead>
         <tr>
@@ -91,23 +93,66 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const logData = JSON.parse(localStorage.getItem("logData")) || [];
-        const tableBody = document.getElementById("logTableBody");
+      const logData = JSON.parse(localStorage.getItem("logData")) || [];
+      const tableBody = document.getElementById("logTableBody");
 
-        // Ensure timestamps are sorted in descending order (most recent first)
-        logData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      // Sort entries so newest appear first in the table
+      logData.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-        logData.forEach(entry => {
-            const row = document.createElement("tr");
-            const ts = new Date(entry.timestamp).toLocaleString();
-            row.innerHTML = `
-                <td>${ts}</td>
-                <td>${entry.currentBG}</td>
-                <td>${entry.mealCarbs}</td>
-                <td>${entry.totalBolus}</td>
-            `;
-            tableBody.appendChild(row);
-        });
+      logData.forEach(entry => {
+        const row = document.createElement("tr");
+        const ts = new Date(entry.timestamp).toLocaleString();
+        row.innerHTML = `
+          <td>${ts}</td>
+          <td>${entry.currentBG}</td>
+          <td>${entry.mealCarbs}</td>
+          <td>${entry.totalBolus}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      // Group log entries by day
+      const grouped = {};
+      logData.forEach(entry => {
+        const d = new Date(entry.timestamp);
+        const dateKey = d.toISOString().split('T')[0];
+        const decimalHour = d.getHours() + d.getMinutes() / 60;
+        if (!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push({ x: decimalHour, y: entry.totalBolus });
+      });
+
+      const colors = [
+        '#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#2ecc71', '#e74c3c'
+      ];
+
+      const datasets = Object.entries(grouped).map(([date, points], idx) => ({
+        label: date,
+        data: points,
+        borderColor: colors[idx % colors.length],
+        fill: false,
+        tension: 0.2
+      }));
+
+      const ctx = document.getElementById('logChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'linear',
+              min: 0,
+              max: 24,
+              title: {
+                display: true,
+                text: 'Hour of Day'
+              }
+            }
+          }
+        }
+      });
     });
   </script>
 </body>
