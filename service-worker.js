@@ -1,18 +1,17 @@
-self.addEventListener("install", (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open("bolus-calculator-v1").then((cache) => {
-      return cache.addAll([
-        "./",
-        "./index.html",
-        "./settings_page.html",
-        "./log_graph_page.html",
-        "./manifest.json",
-        "./icon-192.png",
-        "./icon-512.png",
-        "./timeUtils.js",
-        "https://cdn.jsdelivr.net/npm/chart.js"
-      ]);
-    })
+    caches.open('bolus-calculator-v2').then(cache =>
+      cache.addAll([
+        './',
+        './index.html',
+        './settings_page.html',
+        './log_graph_page.html',
+        './manifest.json',
+        './icon-192.png',
+        './icon-512.png',
+        './timeUtils.js'
+      ])
+    )
   );
 });
 
