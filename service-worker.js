@@ -8,7 +8,9 @@ self.addEventListener("install", (event) => {
         "./log_graph_page.html",
         "./manifest.json",
         "./icon-192.png",
-        "./icon-512.png"
+        "./icon-512.png",
+        "./timeUtils.js",
+        "https://cdn.jsdelivr.net/npm/chart.js"
       ]);
     })
   );
