@@ -70,6 +70,24 @@
       color: #2575fc;
     }
 
+    .day-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .day-nav button {
+      background-color: #6a11cb;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .day-nav button:hover {
+      background-color: #2575fc;
+    }
+
     /* Ensure the chart canvas fills its container */
     #logChart {
       width: 100%;
@@ -81,6 +99,11 @@
   <div class="container">
     <h1>Log History</h1>
     <a href="index.html" class="back-link">Back to Calculator</a>
+    <div class="day-nav">
+      <button id="prevDay">Prev</button>
+      <span id="currentDate"></span>
+      <button id="nextDay">Next</button>
+    </div>
     <canvas id="logChart"></canvas>
     <table>
       <thead>
@@ -117,52 +140,131 @@
         tableBody.appendChild(row);
       });
 
-      // Group log entries by day
+      // ----- Build chart data grouped by day -----
       const grouped = {};
       logData.forEach(entry => {
         const d = new Date(entry.timestamp);
         const dateKey = d.toISOString().split('T')[0];
-        const decimalHour = d.getHours() + d.getMinutes() / 60;
-        if (!grouped[dateKey]) grouped[dateKey] = [];
-        grouped[dateKey].push({ x: decimalHour, y: entry.totalBolus });
+        const x = d.getHours() + d.getMinutes() / 60;
+        if (!grouped[dateKey]) grouped[dateKey] = { glucose: [], insulin: [], carbs: [] };
+        grouped[dateKey].glucose.push({ x, y: entry.currentBG });
+        grouped[dateKey].insulin.push({ x, y: entry.totalBolus });
+        grouped[dateKey].carbs.push({ x, y: entry.mealCarbs });
       });
 
-      const colors = [
-        '#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#2ecc71', '#e74c3c'
-      ];
-
-      const datasets = Object.entries(grouped).map(([date, points], idx) => {
-        // Sort points by hour to ensure lines connect in order
-        points.sort((a, b) => a.x - b.x);
-        return {
-          label: date,
-          data: points,
-          borderColor: colors[idx % colors.length],
-          fill: false,
-          tension: 0.2
-        };
-      });
+      const dates = Object.keys(grouped).sort();
+      let currentIndex = dates.length - 1; // show latest day
 
       const ctx = document.getElementById('logChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          datasets
-        },
-        options: {
-          scales: {
-            x: {
-              type: 'linear',
-              min: 0,
-              max: 24,
-              title: {
-                display: true,
-                text: 'Hour of Day'
+      const dateLabel = document.getElementById('currentDate');
+
+      let chart;
+      function renderChart() {
+        const dateKey = dates[currentIndex];
+        dateLabel.textContent = dateKey || 'No Data';
+
+        if (chart) chart.destroy();
+
+        const dayData = grouped[dateKey] || { glucose: [], insulin: [], carbs: [] };
+
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            datasets: [
+              {
+                label: 'Glucose (mg/dL)',
+                data: dayData.glucose,
+                borderColor: 'red',
+                backgroundColor: 'red',
+                yAxisID: 'y',
+                tension: 0.2,
+                fill: false
+              },
+              {
+                label: 'Insulin (units)',
+                data: dayData.insulin,
+                borderColor: 'blue',
+                backgroundColor: 'blue',
+                yAxisID: 'y',
+                tension: 0,
+                stepped: true,
+                fill: false
+              },
+              {
+                label: 'Carbs (g)',
+                data: dayData.carbs,
+                type: 'bar',
+                borderColor: 'green',
+                backgroundColor: 'rgba(0, 128, 0, 0.5)',
+                yAxisID: 'y1'
+              },
+              {
+                label: 'Min Target',
+                data: [{ x: 0, y: 80 }, { x: 24, y: 80 }],
+                borderColor: 'rgba(100,100,100,0.5)',
+                borderDash: [5,5],
+                pointRadius: 0,
+                fill: false,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Max Target',
+                data: [{ x: 0, y: 140 }, { x: 24, y: 140 }],
+                borderColor: 'rgba(100,100,100,0.5)',
+                borderDash: [5,5],
+                pointRadius: 0,
+                fill: false,
+                yAxisID: 'y'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: 'nearest', intersect: false },
+            scales: {
+              x: {
+                type: 'linear',
+                min: 0,
+                max: 24,
+                ticks: {
+                  stepSize: 2,
+                  callback: v => {
+                    const h = Math.floor(v);
+                    const m = Math.round((v - h) * 60);
+                    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                  }
+                },
+                title: { display: true, text: 'Time' }
+              },
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Glucose / Insulin' }
+              },
+              y1: {
+                beginAtZero: true,
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Carbs' }
               }
             }
           }
+        });
+      }
+
+      document.getElementById('prevDay').addEventListener('click', () => {
+        if (currentIndex > 0) {
+          currentIndex--;
+          renderChart();
         }
       });
+      document.getElementById('nextDay').addEventListener('click', () => {
+        if (currentIndex < dates.length - 1) {
+          currentIndex++;
+          renderChart();
+        }
+      });
+
+      renderChart();
     });
   </script>
 </body>
