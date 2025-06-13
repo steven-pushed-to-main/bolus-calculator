@@ -69,6 +69,12 @@
     .back-link:hover {
       color: #2575fc;
     }
+
+    /* Ensure the chart canvas fills its container */
+    #logChart {
+      width: 100%;
+      height: 300px;
+    }
   </style>
 </head>
 <body>
@@ -125,13 +131,17 @@
         '#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#2ecc71', '#e74c3c'
       ];
 
-      const datasets = Object.entries(grouped).map(([date, points], idx) => ({
-        label: date,
-        data: points,
-        borderColor: colors[idx % colors.length],
-        fill: false,
-        tension: 0.2
-      }));
+      const datasets = Object.entries(grouped).map(([date, points], idx) => {
+        // Sort points by hour to ensure lines connect in order
+        points.sort((a, b) => a.x - b.x);
+        return {
+          label: date,
+          data: points,
+          borderColor: colors[idx % colors.length],
+          fill: false,
+          tension: 0.2
+        };
+      });
 
       const ctx = document.getElementById('logChart').getContext('2d');
       new Chart(ctx, {
