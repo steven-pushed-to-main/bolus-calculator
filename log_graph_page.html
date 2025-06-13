@@ -144,9 +144,14 @@
       const grouped = {};
       logData.forEach(entry => {
         const d = new Date(entry.timestamp);
-        // Group entries by the user's local calendar day
-        // using an ISO-formatted date string in local time
-        const dateKey = d.toLocaleDateString('en-CA');
+        // Group entries by the user's local calendar day. We build an
+        // ISO-style string (YYYY-MM-DD) using local time to avoid
+        // timezone issues that occur with toISOString().
+        const dateKey = [
+          d.getFullYear(),
+          String(d.getMonth() + 1).padStart(2, '0'),
+          String(d.getDate()).padStart(2, '0')
+        ].join('-');
         const x = d.getHours() + d.getMinutes() / 60;
         if (!grouped[dateKey]) grouped[dateKey] = { glucose: [], insulin: [], carbs: [] };
         grouped[dateKey].glucose.push({ x, y: entry.currentBG });
