@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings</title>
+  <script src="timeUtils.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -273,6 +274,14 @@
       saveSchedulesToLocalStorage();
       const scheduleItem = createScheduleItem(newSchedule);
       scheduleList.appendChild(scheduleItem);
+
+      // Refresh active schedule card in case the new entry is active
+      const active = getActiveSchedule();
+      if (active) {
+        showActiveScheduleCard(active);
+      } else {
+        hideActiveScheduleCard();
+      }
     }
 
     function createScheduleItem(schedule) {
@@ -335,34 +344,8 @@
     }
 
     /* ------------------------------------------------------------------
-     * 2. HELPER FUNCTIONS
+     * 2. HELPER FUNCTIONS (imported from timeUtils.js)
      * ------------------------------------------------------------------ */
-
-    // Convert HH:MM to { hour, minute }
-    function parseTime(timeString) {
-      const [h, m] = timeString.split(":");
-      return { hour: Number(h), minute: Number(m) };
-    }
-
-    // Check if currentTime is within [start, end), including crossing midnight.
-    function isWithinTimeWindow(currentTime, start, end) {
-      const currentTotal = currentTime.hour * 60 + currentTime.minute;
-      const startTotal   = start.hour * 60 + start.minute;
-      const endTotal     = end.hour * 60 + end.minute;
-
-      // If start < end (normal case)
-      if (startTotal < endTotal) {
-        return (currentTotal >= startTotal && currentTotal < endTotal);
-      }
-      // If start > end (crosses midnight)
-      else if (startTotal > endTotal) {
-        return (currentTotal >= startTotal || currentTotal < endTotal);
-      }
-      // If start == end => 24-hour coverage
-      else {
-        return true;
-      }
-    }
 
     // Returns the first schedule that is currently active
     function getActiveSchedule() {
@@ -370,8 +353,14 @@
       const currentTime = { hour: now.getHours(), minute: now.getMinutes() };
 
       for (let schedule of schedules) {
-        // Skip schedules missing times
-        if (!schedule.startTime || !schedule.endTime) {
+        // Skip schedules missing times or numeric values
+        if (
+          !schedule.startTime ||
+          !schedule.endTime ||
+          schedule.carbRatio === '' ||
+          schedule.sensitivityFactor === '' ||
+          schedule.targetBG === ''
+        ) {
           continue;
         }
         const startObj = parseTime(schedule.startTime);
