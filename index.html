@@ -118,6 +118,8 @@
     // ---- Main Calculation ----
 
     function calculateBolus() {
+      const iobElement = document.getElementById('iobResult');
+
       // Fetch the appropriate settings (time-based or default)
       const { carbRatio, sensitivityFactor, targetBG } = getCurrentSettings();
       const { iobEnabled, iobDecayHours } = getIobSettings();
@@ -159,6 +161,8 @@
 
       // Save to log
       saveLog(currentBG, mealCarbs, roundedBolus);
+
+      setCalculationState(true);
     }
 
     // Logs the calculation to localStorage
@@ -167,6 +171,38 @@
       const timestamp = new Date().toISOString();
       logData.push({ timestamp, currentBG, mealCarbs, totalBolus });
       localStorage.setItem("logData", JSON.stringify(logData));
+    }
+
+    function setCalculationState(isLocked) {
+      const calculateButton = document.getElementById('calculateButton');
+      const newCalculationButton = document.getElementById('newCalculationButton');
+      const currentBgInput = document.getElementById('currentBG');
+      const mealCarbsInput = document.getElementById('mealCarbs');
+
+      calculateButton.disabled = isLocked;
+      currentBgInput.disabled = isLocked;
+      mealCarbsInput.disabled = isLocked;
+
+      if (isLocked) {
+        calculateButton.style.display = 'none';
+        newCalculationButton.style.display = 'block';
+      } else {
+        calculateButton.style.display = 'block';
+        newCalculationButton.style.display = 'none';
+      }
+    }
+
+    function resetCalculation() {
+      document.getElementById('currentBG').value = '';
+      document.getElementById('mealCarbs').value = '';
+      document.getElementById('result').innerText = '';
+
+      const iobElement = document.getElementById('iobResult');
+      iobElement.innerText = '';
+      iobElement.style.display = 'none';
+
+      setCalculationState(false);
+      document.getElementById('currentBG').focus();
     }
   </script>
 
@@ -241,6 +277,15 @@
       background-color: #2575fc;
     }
 
+    .secondary-button {
+      background-color: #e9e9f5;
+      color: #4a4a4a;
+    }
+
+    .secondary-button:hover {
+      background-color: #d7d7ef;
+    }
+
     .result {
       margin-top: 20px;
       font-size: 20px;
@@ -287,7 +332,10 @@
       <input type="number" id="mealCarbs" inputmode="numeric" />
     </div>
 
-    <button onclick="calculateBolus()">Calculate</button>
+    <button id="calculateButton" onclick="calculateBolus()">Calculate</button>
+    <button id="newCalculationButton" class="secondary-button" onclick="resetCalculation()" style="display: none;">
+      New Calculation
+    </button>
     <div id="result" class="result"></div>
     <div id="iobResult" class="iob-result"></div>
 
