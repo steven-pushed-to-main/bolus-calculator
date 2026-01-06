@@ -6,169 +6,230 @@
   <title>Settings</title>
   <script src="timeUtils.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      color-scheme: light;
+      --background: #fdf2f8;
+      --card: rgba(255, 255, 255, 0.92);
+      --border: rgba(226, 232, 240, 0.9);
+      --foreground: #1f2937;
+      --muted: #6b7280;
+      --primary: #ec4899;
+      --primary-dark: #9333ea;
+      --primary-foreground: #ffffff;
+      --ring: rgba(236, 72, 153, 0.35);
+      --danger: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
       margin: 0;
-      /* Increased padding so there's more space above/below content. Adjust as desired. */
-      padding: 20px 0;
-      background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
+      padding: 24px 0;
+      background: radial-gradient(circle at top, rgba(249, 168, 212, 0.55), transparent 55%),
+        linear-gradient(135deg, #fbc2eb, #a78bfa 55%, #93c5fd);
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
+      color: var(--foreground);
     }
 
     .settings {
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(10px);
-      padding: 20px;
-      border-radius: 20px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-      /* Provide breathing room on small screens */
+      background: var(--card);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      padding: 28px;
+      border-radius: 24px;
+      box-shadow: 0 20px 45px rgba(147, 51, 234, 0.18);
       width: calc(100% - 40px);
-      max-width: 400px;
+      max-width: 420px;
       margin: 20px;
       text-align: center;
     }
 
     .settings h1 {
-      font-size: 28px;
-      font-weight: bold;
-      color: #4a4a4a;
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
       margin-bottom: 20px;
     }
 
     .active-schedule-card {
       display: none; /* hidden by default, shown only if a schedule is active */
-      background: #fff7e6;
-      border: 1px solid #f0d9b5;
-      border-radius: 10px;
-      padding: 15px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(236, 72, 153, 0.2);
+      border-radius: 16px;
+      padding: 16px;
       margin-bottom: 20px;
-      text-align: left; /* so the text lines up nicely */
+      text-align: left;
+      box-shadow: inset 0 0 0 1px rgba(236, 72, 153, 0.08);
     }
+
     .active-schedule-card h2 {
       margin-top: 0;
-      font-size: 18px;
-      font-weight: bold;
-      color: #333;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--foreground);
     }
+
     .active-schedule-card p {
       margin: 6px 0;
-      line-height: 1.4;
-      color: #555;
+      line-height: 1.5;
+      color: var(--muted);
+      font-size: 13px;
     }
 
     .input-group {
-      margin-bottom: 15px;
+      margin-bottom: 16px;
+      text-align: left;
     }
 
     .input-group label {
       display: block;
-      font-weight: bold;
-      font-size: 16px;
-      color: #555;
-      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
     }
 
     .input-group input {
-      width: calc(100% - 24px);
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      font-size: 16px;
-      margin: 0 auto;
-      display: block;
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      font-size: 14px;
+      background: white;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--ring);
     }
 
     .input-group input[type="checkbox"] {
       width: auto;
-      margin-top: 10px;
+      margin-top: 8px;
+      accent-color: var(--primary);
     }
 
     button {
       width: 100%;
-      padding: 15px;
-      background-color: #6a11cb;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
+      padding: 13px 16px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--primary-foreground);
+      font-size: 14px;
+      font-weight: 600;
       border: none;
-      border-radius: 30px;
+      border-radius: 999px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 12px 24px rgba(236, 72, 153, 0.25);
     }
 
     button:hover {
-      background-color: #2575fc;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(147, 51, 234, 0.3);
     }
 
     .nav-buttons {
       display: flex;
       justify-content: center;
-      gap: 20px;
+      gap: 12px;
       margin-top: 20px;
+      flex-wrap: wrap;
     }
 
     .nav-link {
-      font-size: 14px;
-      font-weight: bold;
+      font-size: 13px;
+      font-weight: 600;
       text-decoration: none;
-      color: #6a11cb;
-      transition: color 0.3s;
+      color: #7c3aed;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      transition: transform 0.15s ease, background 0.2s ease;
     }
 
     .nav-link:hover {
-      color: #2575fc;
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.9);
     }
 
     .nav-link.clear {
-      color: #e74c3c;
-    }
-
-    .nav-link.clear:hover {
-      color: #c0392b;
+      color: var(--danger);
+      border-color: rgba(244, 63, 94, 0.3);
     }
 
     .scheduled-settings {
-      margin-top: 30px;
+      margin-top: 26px;
       text-align: left;
     }
 
     .scheduled-settings h2 {
-      font-size: 20px;
-      font-weight: bold;
-      color: #4a4a4a;
-      margin-bottom: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--foreground);
+      margin-bottom: 12px;
     }
 
     .schedule-item {
-      margin-bottom: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+      margin-bottom: 16px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .schedule-item label {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
     }
 
     .schedule-item input {
-      margin: 5px 0;
-      width: calc(100% - 24px);
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      margin: 6px 0 0;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    .schedule-item input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--ring);
     }
 
     .schedule-item .remove {
-      color: #e74c3c;
+      color: var(--danger);
       cursor: pointer;
-      font-size: 14px;
+      font-size: 12px;
       display: inline-block;
-      margin-top: 5px;
+      margin-top: 10px;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
   <div class="settings">
     <h1>Settings</h1>
+    <p class="subtitle">Fine-tune the numbers with shadcn-style controls.</p>
 
     <!-- Active Schedule Card -->
     <div id="activeScheduleCard" class="active-schedule-card">

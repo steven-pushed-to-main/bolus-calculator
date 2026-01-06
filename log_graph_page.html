@@ -6,99 +6,154 @@
   <title>Log History</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      color-scheme: light;
+      --background: #fdf2f8;
+      --card: rgba(255, 255, 255, 0.92);
+      --border: rgba(226, 232, 240, 0.9);
+      --foreground: #1f2937;
+      --muted: #6b7280;
+      --primary: #ec4899;
+      --primary-dark: #9333ea;
+      --primary-foreground: #ffffff;
+      --ring: rgba(236, 72, 153, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
       margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #fbc2eb, #a6c1ee);
+      padding: 24px 0;
+      background: radial-gradient(circle at top, rgba(249, 168, 212, 0.55), transparent 55%),
+        linear-gradient(135deg, #fbc2eb, #a78bfa 55%, #93c5fd);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       min-height: 100vh;
+      color: var(--foreground);
     }
 
     .container {
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(10px);
-      padding: 20px;
-      border-radius: 20px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-      /* Provide breathing room on small screens */
+      background: var(--card);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      padding: 28px;
+      border-radius: 24px;
+      box-shadow: 0 20px 45px rgba(147, 51, 234, 0.18);
       width: calc(100% - 40px);
-      max-width: 600px;
+      max-width: 640px;
       margin: 20px auto;
     }
 
     h1 {
-      font-size: 28px;
-      font-weight: bold;
-      color: #4a4a4a;
+      font-size: 24px;
+      font-weight: 700;
       text-align: center;
-      margin-bottom: 20px;
+      margin: 0 0 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 18px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
+      overflow: hidden;
+      border-radius: 14px;
     }
 
     table th, table td {
-      border: 1px solid #ccc;
+      border-bottom: 1px solid var(--border);
       padding: 10px;
       text-align: center;
+      font-size: 13px;
     }
 
     table th {
-      background-color: #6a11cb;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: white;
+      font-weight: 600;
+    }
+
+    table tr:last-child td {
+      border-bottom: none;
     }
 
     .back-link {
-      display: block;
-      margin-bottom: 20px; /* Adds space below the link */
-      text-align: left; /* Aligns the link to the left */
-      color: #6a11cb;
-      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      color: #7c3aed;
+      font-size: 13px;
       text-decoration: none;
-      font-weight: bold;
-      transition: color 0.3s;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      transition: transform 0.15s ease, background 0.2s ease;
     }
 
     .back-link:hover {
-      color: #2575fc;
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.9);
     }
 
     .day-nav {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
-    }
-    .day-nav button {
-      background-color: #6a11cb;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-    .day-nav button:hover {
-      background-color: #2575fc;
+      margin-bottom: 14px;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
     }
 
-    /* Ensure the chart canvas fills its container */
+    .day-nav button {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 10px 20px rgba(236, 72, 153, 0.25);
+      transition: transform 0.15s ease;
+    }
+
+    .day-nav button:hover {
+      transform: translateY(-1px);
+    }
+
     #logChart {
       width: 100%;
       height: 300px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 16px;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Log History</h1>
-    <a href="index.html" class="back-link">Back to Calculator</a>
+    <p class="subtitle">A shadcn-inspired view of your daily trends.</p>
+    <a href="index.html" class="back-link">← Back to Calculator</a>
     <div class="day-nav">
       <button id="prevDay">Prev</button>
       <span id="currentDate"></span>
