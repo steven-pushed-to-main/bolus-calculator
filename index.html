@@ -84,11 +84,44 @@
       }
     }
 
+    function getIobSettings() {
+      const storedEnabled = localStorage.getItem("iobEnabled");
+      const storedDecayHours = parseFloat(localStorage.getItem("iobDecayHours"));
+      const iobEnabled = storedEnabled === null ? true : storedEnabled === "true";
+      const fallbackDecayHours = Number.isNaN(storedDecayHours) ? 4 : storedDecayHours;
+      const iobDecayHours = Math.min(Math.max(fallbackDecayHours, 1), 5);
+
+      return { iobEnabled, iobDecayHours };
+    }
+
+    function calculateIob(logData, decayHours) {
+      const decayMinutes = decayHours * 60;
+      const now = Date.now();
+      const cutoffTime = now - decayMinutes * 60000;
+
+      return logData.reduce((total, entry) => {
+        const entryTime = new Date(entry.timestamp).getTime();
+        if (entryTime < cutoffTime) {
+          return total;
+        }
+        const minutesSince = (now - entryTime) / 60000;
+
+        if (minutesSince <= 0 || minutesSince >= decayMinutes) {
+          return total;
+        }
+
+        const remainingFraction = 1 - minutesSince / decayMinutes;
+        return total + entry.totalBolus * remainingFraction;
+      }, 0);
+    }
+
     // ---- Main Calculation ----
 
     function calculateBolus() {
       // Fetch the appropriate settings (time-based or default)
       const { carbRatio, sensitivityFactor, targetBG } = getCurrentSettings();
+      const { iobEnabled, iobDecayHours } = getIobSettings();
+      const iobElement = document.getElementById('iobResult');
 
       // Get user inputs
       const currentBG = parseFloat(document.getElementById('currentBG').value);
@@ -103,17 +136,30 @@
         isNaN(mealCarbs)
       ) {
         document.getElementById('result').innerText = 'Please enter valid numbers.';
+        iobElement.innerText = '';
+        iobElement.style.display = 'none';
         return;
       }
 
       // Bolus calculations
       const carbBolus = mealCarbs / carbRatio;
       const correctionBolus = currentBG > targetBG ? (currentBG - targetBG) / sensitivityFactor : 0;
-      const totalBolus = carbBolus + correctionBolus;
-      const roundedBolus = Math.round(totalBolus);
+      const logData = JSON.parse(localStorage.getItem("logData")) || [];
+      const iobUnits = iobEnabled ? calculateIob(logData, iobDecayHours) : 0;
+      const totalBolus = carbBolus + correctionBolus - iobUnits;
+      const safeBolus = Math.max(0, totalBolus);
+      const roundedBolus = Math.round(safeBolus);
 
       // Display result
       document.getElementById('result').innerText = `Total Bolus: ${roundedBolus}`;
+      if (iobEnabled) {
+        const iobDisplay = (Math.round(iobUnits * 100) / 100).toFixed(2);
+        iobElement.innerText = `IOB ${iobDisplay} units`;
+        iobElement.style.display = 'block';
+      } else {
+        iobElement.innerText = '';
+        iobElement.style.display = 'none';
+      }
 
       // Save to log
       saveLog(currentBG, mealCarbs, roundedBolus);
@@ -206,6 +252,12 @@
       color: #333;
     }
 
+    .iob-result {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #555;
+    }
+
     .nav-links {
       margin-top: 20px;
       display: flex;
@@ -241,6 +293,7 @@
 
     <button onclick="calculateBolus()">Calculate</button>
     <div id="result" class="result"></div>
+    <div id="iobResult" class="iob-result"></div>
 
     <div class="nav-links">
       <a href="settings_page.html">Settings</a>
