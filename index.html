@@ -135,6 +135,8 @@
         isNaN(mealCarbs)
       ) {
         document.getElementById('result').innerText = 'Please enter valid numbers.';
+        iobElement.innerText = '';
+        iobElement.style.display = 'none';
         return;
       }
 
@@ -246,6 +248,12 @@
       color: #333;
     }
 
+    .iob-result {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #555;
+    }
+
     .nav-links {
       margin-top: 20px;
       display: flex;
@@ -281,6 +289,7 @@
 
     <button onclick="calculateBolus()">Calculate</button>
     <div id="result" class="result"></div>
+    <div id="iobResult" class="iob-result"></div>
 
     <div class="nav-links">
       <a href="settings_page.html">Settings</a>
