@@ -121,7 +121,6 @@
       // Fetch the appropriate settings (time-based or default)
       const { carbRatio, sensitivityFactor, targetBG } = getCurrentSettings();
       const { iobEnabled, iobDecayHours } = getIobSettings();
-      const iobElement = document.getElementById('iobResult');
 
       // Get user inputs
       const currentBG = parseFloat(document.getElementById('currentBG').value);
@@ -151,15 +150,12 @@
       const roundedBolus = Math.round(safeBolus);
 
       // Display result
-      document.getElementById('result').innerText = `Total Bolus: ${roundedBolus}`;
+      let resultText = `Total Bolus: ${roundedBolus}`;
       if (iobEnabled) {
         const iobDisplay = (Math.round(iobUnits * 100) / 100).toFixed(2);
-        iobElement.innerText = `IOB ${iobDisplay} units`;
-        iobElement.style.display = 'block';
-      } else {
-        iobElement.innerText = '';
-        iobElement.style.display = 'none';
+        resultText += ` (IOB ${iobDisplay} units)`;
       }
+      document.getElementById('result').innerText = resultText;
 
       // Save to log
       saveLog(currentBG, mealCarbs, roundedBolus);
