@@ -115,6 +115,35 @@
       }, 0);
     }
 
+    function formatIobTimestamp(date) {
+      return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function updateIobBadge() {
+      const badge = document.getElementById('iobBadge');
+      const valueElement = document.getElementById('iobBadgeValue');
+      const timeElement = document.getElementById('iobBadgeTime');
+
+      if (!badge || !valueElement || !timeElement) {
+        return;
+      }
+
+      const { iobEnabled, iobDecayHours } = getIobSettings();
+
+      if (!iobEnabled) {
+        badge.style.display = 'none';
+        return;
+      }
+
+      const logData = JSON.parse(localStorage.getItem("logData")) || [];
+      const iobUnits = calculateIob(logData, iobDecayHours);
+      const iobDisplay = (Math.round(iobUnits * 100) / 100).toFixed(2);
+
+      valueElement.innerText = `${iobDisplay} units`;
+      timeElement.innerText = `as of ${formatIobTimestamp(new Date())}`;
+      badge.style.display = 'flex';
+    }
+
     // ---- Main Calculation ----
 
     function calculateBolus() {
@@ -204,6 +233,10 @@
       setCalculationState(false);
       document.getElementById('currentBG').focus();
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateIobBadge();
+    });
   </script>
 
   <style>
@@ -258,6 +291,47 @@
       font-size: 24px;
       font-weight: 700;
       margin: 0 0 8px;
+    }
+
+    .iob-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      margin: 12px 0 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(236, 72, 153, 0.25);
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: inset 0 0 0 1px rgba(236, 72, 153, 0.05);
+    }
+
+    .iob-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9333ea;
+      background: rgba(236, 72, 153, 0.15);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .iob-meta {
+      display: flex;
+      flex-direction: column;
+      text-align: right;
+    }
+
+    .iob-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    .iob-time {
+      font-size: 12px;
+      color: var(--muted);
     }
 
     .subtitle {
@@ -373,6 +447,13 @@
 <body>
   <div class="calculator">
     <h1>Insulin Bolus Calculator</h1>
+    <div id="iobBadge" class="iob-badge" style="display: none;">
+      <span class="iob-label">IOB</span>
+      <div class="iob-meta">
+        <span id="iobBadgeValue" class="iob-value"></span>
+        <span id="iobBadgeTime" class="iob-time"></span>
+      </div>
+    </div>
 
     <div class="input-group">
       <label for="currentBG">Current BG (mg/dL):</label>
