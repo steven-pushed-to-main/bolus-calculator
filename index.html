@@ -152,17 +152,94 @@
 
     // ---- Main Calculation ----
 
-    function showPreviewActions(show) {
-      const previewActions = document.getElementById('previewActions');
-      if (!previewActions) {
-        return;
-      }
-      previewActions.style.display = show ? 'flex' : 'none';
-    }
-
     function clearPendingPreview() {
       pendingPreview = null;
-      showPreviewActions(false);
+    }
+
+    function isPreviewModalOpen() {
+      const modal = document.getElementById('bolusPreviewModal');
+      return modal ? modal.classList.contains('is-open') : false;
+    }
+
+    function setInAppNavigationLocked(isLocked) {
+      const navLinks = document.querySelectorAll('.nav-links a');
+      navLinks.forEach((link) => {
+        if (isLocked) {
+          link.classList.add('nav-link-disabled');
+          link.setAttribute('aria-disabled', 'true');
+          link.setAttribute('tabindex', '-1');
+        } else {
+          link.classList.remove('nav-link-disabled');
+          link.removeAttribute('aria-disabled');
+          link.removeAttribute('tabindex');
+        }
+      });
+    }
+
+    function openPreviewModal(resultText) {
+      const modal = document.getElementById('bolusPreviewModal');
+      const resultElement = document.getElementById('modalResultText');
+      const logButton = document.getElementById('modalLogBolusButton');
+
+      if (!modal || !resultElement || !logButton) {
+        return;
+      }
+
+      resultElement.innerText = resultText;
+      modal.classList.add('is-open');
+      document.body.classList.add('modal-open');
+      setInAppNavigationLocked(true);
+      logButton.focus();
+    }
+
+    function closePreviewModal() {
+      const modal = document.getElementById('bolusPreviewModal');
+      const resultElement = document.getElementById('modalResultText');
+      if (!modal || !resultElement) {
+        return;
+      }
+
+      modal.classList.remove('is-open');
+      resultElement.innerText = '';
+      document.body.classList.remove('modal-open');
+      setInAppNavigationLocked(false);
+    }
+
+    function handlePreviewModalKeydown(event) {
+      if (!isPreviewModalOpen()) {
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const logButton = document.getElementById('modalLogBolusButton');
+        const cancelButton = document.getElementById('modalCancelButton');
+        const controls = [logButton, cancelButton].filter(Boolean);
+
+        if (controls.length === 0) {
+          return;
+        }
+
+        const activeIndex = controls.indexOf(document.activeElement);
+        event.preventDefault();
+
+        const delta = event.shiftKey ? -1 : 1;
+        const nextIndex = activeIndex === -1
+          ? 0
+          : (activeIndex + delta + controls.length) % controls.length;
+        controls[nextIndex].focus();
+      }
+    }
+
+    function preventNavigationWhileModalOpen(event) {
+      if (!isPreviewModalOpen()) {
+        return;
+      }
+      event.preventDefault();
     }
 
     function buildBolusPreview(currentBG, mealCarbs) {
@@ -223,8 +300,8 @@
       }
 
       pendingPreview = preview;
-      document.getElementById('result').innerText = preview.resultText;
-      showPreviewActions(true);
+      document.getElementById('result').innerText = '';
+      openPreviewModal(preview.resultText);
       iobElement.innerText = '';
       iobElement.style.display = 'none';
     }
@@ -235,12 +312,14 @@
       }
 
       saveLog(pendingPreview.currentBG, pendingPreview.mealCarbs, pendingPreview.roundedBolus);
+      closePreviewModal();
       clearPendingPreview();
       setCalculationState(true);
       updateIobBadge();
     }
 
     function cancelPreview() {
+      closePreviewModal();
       clearPendingPreview();
       document.getElementById('result').innerText = '';
       document.getElementById('currentBG').focus();
@@ -282,12 +361,31 @@
       iobElement.innerText = '';
       iobElement.style.display = 'none';
 
+      closePreviewModal();
       clearPendingPreview();
       setCalculationState(false);
       document.getElementById('currentBG').focus();
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('bolusPreviewModal');
+      const navLinks = document.querySelectorAll('.nav-links a');
+
+      closePreviewModal();
+
+      if (modal) {
+        modal.addEventListener('click', (event) => {
+          if (event.target === modal) {
+            event.preventDefault();
+          }
+        });
+      }
+
+      navLinks.forEach((link) => {
+        link.addEventListener('click', preventNavigationWhileModalOpen);
+      });
+
+      document.addEventListener('keydown', handlePreviewModalKeydown);
       updateIobBadge();
     });
   </script>
@@ -325,6 +423,10 @@
       justify-content: center;
       align-items: center;
       color: var(--foreground);
+    }
+
+    body.modal-open {
+      overflow: hidden;
     }
 
     .calculator {
@@ -458,16 +560,6 @@
       transform: translateY(-1px);
     }
 
-    .preview-actions {
-      margin-top: 12px;
-      display: flex;
-      gap: 10px;
-    }
-
-    .preview-actions button {
-      flex: 1;
-    }
-
     .result {
       margin-top: 18px;
       font-size: 18px;
@@ -505,6 +597,61 @@
       transform: translateY(-1px);
       background: rgba(255, 255, 255, 0.85);
     }
+
+    .nav-links a.nav-link-disabled {
+      pointer-events: none;
+      opacity: 0.4;
+      transform: none;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(17, 24, 39, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+    }
+
+    .modal-overlay.is-open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 340px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 24px 45px rgba(17, 24, 39, 0.25);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .modal-copy {
+      margin: 10px 0 18px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -534,14 +681,21 @@
     </button>
     <div id="result" class="result"></div>
     <div id="iobResult" class="iob-result"></div>
-    <div id="previewActions" class="preview-actions" style="display: none;">
-      <button id="logBolusButton" onclick="confirmLogBolus()">Log Bolus</button>
-      <button id="cancelPreviewButton" class="secondary-button" onclick="cancelPreview()">Cancel</button>
-    </div>
 
     <div class="nav-links">
       <a href="settings_page.html">Settings</a>
       <a href="log_graph_page.html">Log &amp; Graph</a>
+    </div>
+  </div>
+
+  <div id="bolusPreviewModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div id="bolusPreviewDialog" class="modal-card">
+      <h2 id="modalTitle" class="modal-title">Confirm Bolus</h2>
+      <p id="modalResultText" class="modal-copy"></p>
+      <div class="modal-actions">
+        <button id="modalLogBolusButton" onclick="confirmLogBolus()">Log Bolus</button>
+        <button id="modalCancelButton" class="secondary-button" onclick="cancelPreview()">Cancel</button>
+      </div>
     </div>
   </div>
 </body>

@@ -85,16 +85,28 @@ async function run() {
     await page.fill('#mealCarbs', '60');
     await page.click('#calculateButton');
 
-    const previewText = (await page.textContent('#result')).trim();
+    const previewText = (await page.textContent('#modalResultText')).trim();
     assert(previewText === 'Total Bolus: 7', `Expected preview dose of 7, received "${previewText}".`);
 
-    const actionsVisible = await page.isVisible('#previewActions');
-    assert(actionsVisible, 'Preview actions should be visible after calculating.');
+    const modalVisible = await page.isVisible('#bolusPreviewModal.is-open');
+    assert(modalVisible, 'Preview modal should be visible after calculating.');
 
     let logLength = await page.evaluate(() => JSON.parse(localStorage.getItem('logData') || '[]').length);
     assert(logLength === 0, 'Preview should not write to logData.');
 
-    await page.click('#cancelPreviewButton');
+    // Modal blocks in-app navigation while open.
+    await page.click('a[href="settings_page.html"]', { force: true });
+    assert(page.url().endsWith('/index.html'), 'Settings navigation should be blocked while modal is open.');
+
+    // Escape should not close the modal.
+    await page.keyboard.press('Escape');
+    assert(await page.isVisible('#bolusPreviewModal.is-open'), 'Escape should not dismiss modal.');
+
+    // Clicking outside dialog should not close modal.
+    await page.click('#bolusPreviewModal', { position: { x: 5, y: 5 } });
+    assert(await page.isVisible('#bolusPreviewModal.is-open'), 'Backdrop click should not dismiss modal.');
+
+    await page.click('#modalCancelButton');
 
     const resultAfterCancel = ((await page.textContent('#result')) || '').trim();
     assert(resultAfterCancel === '', 'Cancel should clear the preview result text.');
@@ -108,7 +120,7 @@ async function run() {
     assert(logLength === 0, 'Cancel should not write to logData.');
 
     await page.click('#calculateButton');
-    await page.click('#logBolusButton');
+    await page.click('#modalLogBolusButton');
 
     const loggedEntry = await page.evaluate(() => {
       const logData = JSON.parse(localStorage.getItem('logData') || '[]');
@@ -125,7 +137,7 @@ async function run() {
     const carbsValueAfterReset = await page.inputValue('#mealCarbs');
     assert(bgValueAfterReset === '' && carbsValueAfterReset === '', 'New Calculation should clear inputs.');
     assert(await page.isVisible('#calculateButton'), 'Calculate should be visible after reset.');
-    assert(!(await page.isVisible('#previewActions')), 'Preview actions should be hidden after reset.');
+    assert(!(await page.isVisible('#bolusPreviewModal.is-open')), 'Preview modal should be hidden after reset.');
 
     console.log('✔ preview/log/cancel flow works in browser automation');
   } finally {
