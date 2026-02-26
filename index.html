@@ -101,6 +101,10 @@
 
       return logData.reduce((total, entry) => {
         const entryTime = new Date(entry.timestamp).getTime();
+        const bolusUnits = Number(entry.totalBolus);
+        if (!Number.isFinite(entryTime) || !Number.isFinite(bolusUnits)) {
+          return total;
+        }
         if (entryTime < cutoffTime) {
           return total;
         }
@@ -111,7 +115,7 @@
         }
 
         const remainingFraction = 1 - minutesSince / decayMinutes;
-        return total + entry.totalBolus * remainingFraction;
+        return total + bolusUnits * remainingFraction;
       }, 0);
     }
 
@@ -162,10 +166,13 @@
         isNaN(carbRatio) ||
         isNaN(sensitivityFactor) ||
         isNaN(targetBG) ||
+        carbRatio <= 0 ||
+        sensitivityFactor <= 0 ||
+        targetBG <= 0 ||
         isNaN(currentBG) ||
         isNaN(mealCarbs)
       ) {
-        document.getElementById('result').innerText = 'Please enter valid numbers.';
+        document.getElementById('result').innerText = 'Please enter valid positive settings and numbers.';
         iobElement.innerText = '';
         iobElement.style.display = 'none';
         return;
