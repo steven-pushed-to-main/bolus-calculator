@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "test": "node tests/runTests.js"
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node tests/runTests.js",
+    "test:e2e": "node tests/previewFlow.e2e.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
   }
 }
