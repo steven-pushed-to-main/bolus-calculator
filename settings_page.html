@@ -335,6 +335,25 @@
       const iobEnabled        = document.getElementById("iobEnabled").checked;
       const iobDecayHours     = parseFloat(document.getElementById("iobDecayHours").value);
 
+      const parsedCarbRatio = parseFloat(carbRatio);
+      const parsedSensitivityFactor = parseFloat(sensitivityFactor);
+      const parsedTargetBG = parseFloat(targetBG);
+
+      if (carbRatio && (!Number.isFinite(parsedCarbRatio) || parsedCarbRatio <= 0)) {
+        alert("Carb ratio must be greater than 0.");
+        return;
+      }
+
+      if (sensitivityFactor && (!Number.isFinite(parsedSensitivityFactor) || parsedSensitivityFactor <= 0)) {
+        alert("Sensitivity factor must be greater than 0.");
+        return;
+      }
+
+      if (targetBG && (!Number.isFinite(parsedTargetBG) || parsedTargetBG <= 0)) {
+        alert("Target BG must be greater than 0.");
+        return;
+      }
+
       if (carbRatio) {
         localStorage.setItem("carbRatio", carbRatio);
       }

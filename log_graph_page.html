@@ -198,7 +198,14 @@
       const grouped = {};
         logData.forEach(entry => {
           const d = new Date(entry.timestamp);
-          const dateKey = d.toISOString().split('T')[0];
+          if (Number.isNaN(d.getTime())) {
+            return;
+          }
+          const dateKey = [
+            d.getFullYear(),
+            String(d.getMonth() + 1).padStart(2, '0'),
+            String(d.getDate()).padStart(2, '0')
+          ].join('-');
           const x = d.getHours() + d.getMinutes() / 60;
           if (!grouped[dateKey]) grouped[dateKey] = { glucose: [], insulin: [], carbs: [] };
           grouped[dateKey].glucose.push({ x, y: entry.currentBG });
