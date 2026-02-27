@@ -121,7 +121,7 @@
         }
         const minutesSince = (now - entryTime) / 60000;
 
-        if (minutesSince <= 0 || minutesSince >= decayMinutes) {
+        if (minutesSince < 0 || minutesSince >= decayMinutes) {
           return total;
         }
 
