@@ -76,7 +76,8 @@ async function run() {
       localStorage.setItem('carbRatio', '10');
       localStorage.setItem('sensitivityFactor', '50');
       localStorage.setItem('targetBG', '100');
-      localStorage.setItem('iobEnabled', 'false');
+      localStorage.setItem('iobEnabled', 'true');
+      localStorage.setItem('iobDecayHours', '4');
       localStorage.setItem('logData', JSON.stringify([]));
     });
     await page.reload();
@@ -86,7 +87,7 @@ async function run() {
     await page.click('#calculateButton');
 
     const previewText = (await page.textContent('#modalResultText')).trim();
-    assert(previewText === 'Total Bolus: 7', `Expected preview dose of 7, received "${previewText}".`);
+    assert(previewText === 'Total Bolus: 7 (IOB 0.00 units)', `Expected preview dose of 7 with zero IOB, received "${previewText}".`);
 
     const modalVisible = await page.isVisible('#bolusPreviewModal.is-open');
     assert(modalVisible, 'Preview modal should be visible after calculating.');
@@ -128,6 +129,10 @@ async function run() {
     });
     assert(loggedEntry && Number(loggedEntry.totalBolus) === 7, 'Log Bolus should persist the previewed bolus.');
 
+    const badgeValueText = ((await page.textContent('#iobBadgeValue')) || '').trim();
+    const badgeValue = Number.parseFloat(badgeValueText);
+    assert(Number.isFinite(badgeValue) && badgeValue > 6.9 && badgeValue <= 7, `Expected IOB badge to update immediately to about 7 units, received "${badgeValueText}".`);
+
     const calculateButtonVisible = await page.isVisible('#calculateButton');
     const newCalculationVisible = await page.isVisible('#newCalculationButton');
     assert(!calculateButtonVisible && newCalculationVisible, 'After logging, calculator should switch to locked state.');
@@ -138,6 +143,19 @@ async function run() {
     assert(bgValueAfterReset === '' && carbsValueAfterReset === '', 'New Calculation should clear inputs.');
     assert(await page.isVisible('#calculateButton'), 'Calculate should be visible after reset.');
     assert(!(await page.isVisible('#bolusPreviewModal.is-open')), 'Preview modal should be hidden after reset.');
+
+    await page.fill('#currentBG', '100');
+    await page.fill('#mealCarbs', '20');
+    await page.click('#calculateButton');
+
+    const nextPreviewText = ((await page.textContent('#modalResultText')) || '').trim();
+    assert(nextPreviewText.startsWith('Total Bolus: 0 (IOB '), `Expected follow-up preview to include immediate IOB, received "${nextPreviewText}".`);
+
+    const nextPreviewMatch = nextPreviewText.match(/^Total Bolus: 0 \(IOB ([\d.]+) units\)$/);
+    assert(nextPreviewMatch, `Expected follow-up preview format to include numeric IOB, received "${nextPreviewText}".`);
+
+    const previewIob = Number.parseFloat(nextPreviewMatch[1]);
+    assert(Number.isFinite(previewIob) && previewIob > 6.9 && previewIob <= 7, `Expected follow-up preview IOB to reflect the just-logged bolus, received "${nextPreviewMatch[1]}".`);
 
     console.log('✔ preview/log/cancel flow works in browser automation');
   } finally {
