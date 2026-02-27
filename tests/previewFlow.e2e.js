@@ -2,6 +2,10 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 
+const APP_VERSION_SOURCE = fs.readFileSync(path.resolve(__dirname, '..', 'app-version.js'), 'utf8');
+const APP_VERSION_MATCH = APP_VERSION_SOURCE.match(/window\.APP_VERSION\s*=\s*"([^"]+)"/);
+const APP_VERSION = APP_VERSION_MATCH ? APP_VERSION_MATCH[1] : null;
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -43,6 +47,8 @@ function createStaticServer(rootDir) {
 }
 
 async function run() {
+  assert(APP_VERSION, 'Expected app-version.js to define window.APP_VERSION.');
+
   let playwright;
   try {
     playwright = require('playwright');
@@ -81,6 +87,12 @@ async function run() {
       localStorage.setItem('logData', JSON.stringify([]));
     });
     await page.reload();
+
+    await page.goto(`${baseUrl}/settings_page.html`);
+    const versionText = ((await page.textContent('#appVersionLabel')) || '').trim();
+    assert(versionText === `Version ${APP_VERSION}`, `Expected settings page version label to be "Version ${APP_VERSION}", received "${versionText}".`);
+
+    await page.goto(`${baseUrl}/index.html`);
 
     await page.fill('#currentBG', '150');
     await page.fill('#mealCarbs', '60');

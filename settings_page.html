@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings</title>
+  <script src="app-version.js"></script>
   <script src="timeUtils.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -224,6 +225,12 @@
       margin-top: 10px;
       font-weight: 600;
     }
+
+    .version-label {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -273,6 +280,8 @@
       <a href="#" class="nav-link clear" onclick="clearLogData()">Clear Log Data</a>
       <a href="index.html" class="nav-link">Back to Calculator</a>
     </div>
+
+    <div id="appVersionLabel" class="version-label">Version unavailable</div>
   </div>
 
   <script>
@@ -292,6 +301,13 @@
       const savedTargetBG          = localStorage.getItem("targetBG");
       const savedIobEnabled        = localStorage.getItem("iobEnabled");
       const savedIobDecayHours     = localStorage.getItem("iobDecayHours");
+      const appVersionLabel        = document.getElementById("appVersionLabel");
+
+      if (typeof window.APP_VERSION === "string" && window.APP_VERSION.trim() !== "") {
+        appVersionLabel.textContent = `Version ${window.APP_VERSION}`;
+      } else {
+        appVersionLabel.textContent = "Version unavailable";
+      }
 
       if (savedCarbRatio) {
         document.getElementById("carbRatio").value = savedCarbRatio;
