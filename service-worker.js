@@ -1,4 +1,5 @@
-const CACHE_NAME = 'bolus-calculator-v5';
+// Keep this cache version aligned with window.APP_VERSION in app-version.js.
+const CACHE_NAME = 'bolus-calculator-v2.1.1';
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -8,6 +9,7 @@ self.addEventListener('install', event => {
         './index.html',
         './settings_page.html',
         './log_graph_page.html',
+        './app-version.js',
         './manifest.json',
         './icon-192.png',
         './icon-512.png',
